@@ -227,7 +227,7 @@
     </div>
     <div class="header-right">
       <span id="last-updated">—</span><br>
-      Moneda: CLP
+      Moneda: CLP · UF @ $<span id="uf-rate-header"></span>
       <br>
       <button class="refresh-btn" onclick="loadData()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
@@ -298,6 +298,14 @@
     </div>
   </div>
 
+  <!-- Timeline -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Evolución acumulada · CLP <span style="font-weight:400;font-size:10px;color:var(--muted);margin-left:8px;">por stage_change_time · UF convertida a $<span id="uf-rate"></span></span></div>
+    <div style="position:relative;width:100%;height:300px;">
+      <canvas id="timeline" role="img" aria-label="Evolución acumulada adjudicado, enviado, perdido"></canvas>
+    </div>
+  </div>
+
   <!-- Bottom -->
   <div class="bottom-grid">
 
@@ -330,14 +338,37 @@ const PIPELINE_ID = 3;
 const STAGE_ADJ  = 84;
 const STAGE_PERD = 85;
 const STAGE_ENV  = 14;
+const UF_RATE    = 39000; // CLP por 1 UF — actualizar mensualmente
 
 let donutChart = null;
 let barChart = null;
+let timelineChart = null;
 
 function fmt(val) {
   if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + 'B';
   if (val >= 1e6) return '$' + Math.round(val / 1e6) + 'M';
   return '$' + Math.round(val).toLocaleString('es-CL');
+}
+
+function fmtDeal(rawValue, currency) {
+  if (currency === 'CLF') {
+    if (rawValue >= 1000) return 'UF ' + (rawValue / 1000).toFixed(1) + 'k';
+    return 'UF ' + Math.round(rawValue).toLocaleString('es-CL');
+  }
+  return fmt(rawValue);
+}
+
+function normalizeDeal(r) {
+  const rawValue = parseFloat(r.value) || 0;
+  const currency = r.currency || 'CLP';
+  return {
+    ...r,
+    stage_id: parseInt(r.stage_id),
+    pipeline_id: parseInt(r.pipeline_id),
+    rawValue,
+    currency,
+    value: currency === 'CLF' ? rawValue * UF_RATE : rawValue
+  };
 }
 
 function cleanTitle(t) {
@@ -380,20 +411,19 @@ function showError() {
 }
 
 function renderDashboard(rows) {
-  const envRaw = rows.filter(r => parseInt(r.pipeline_id) === PIPELINE_ID && parseInt(r.stage_id) === STAGE_ENV);
-  console.log('[DEBUG] Enviados en CSV (pipeline 3, stage 14):', envRaw.length);
-  console.log('[DEBUG] Títulos:', envRaw.map(r => r.title + ' | add_time:' + r.add_time));
-
-  // Filter to target stages
+  // Open deals for KPIs / tables
   const deals = rows.filter(r => {
     const sid = parseInt(r.stage_id);
     const pid = parseInt(r.pipeline_id);
     return pid === PIPELINE_ID && r.status === 'open' && (sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV);
-  }).map(r => ({
-    ...r,
-    stage_id: parseInt(r.stage_id),
-    value: parseFloat(r.value) || 0
-  }));
+  }).map(normalizeDeal);
+
+  // All deals (any status) for historical timeline
+  const allPipelineDeals = rows.filter(r => {
+    const sid = parseInt(r.stage_id);
+    const pid = parseInt(r.pipeline_id);
+    return pid === PIPELINE_ID && (sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV);
+  }).map(normalizeDeal);
 
   const adj  = deals.filter(d => d.stage_id === STAGE_ADJ);
   const perd = deals.filter(d => d.stage_id === STAGE_PERD);
@@ -415,6 +445,9 @@ function renderDashboard(rows) {
   document.getElementById('kpi-tasa').textContent     = Math.round(tasa * 100) + '%';
   document.getElementById('kpi-ticket').textContent   = fmt(ticket);
   document.getElementById('last-updated').textContent = 'Actualizado ' + new Date().toLocaleString('es-CL', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const ufFmt = UF_RATE.toLocaleString('es-CL');
+  document.getElementById('uf-rate-header').textContent = ufFmt;
+  document.getElementById('uf-rate').textContent = ufFmt;
 
   // Tables
   const sortedAdj  = [...adj].sort((a,b) => b.value - a.value);
@@ -424,14 +457,14 @@ function renderDashboard(rows) {
     `<tr>
       <td class="td-title">${cleanTitle(d.title)}</td>
       <td class="td-owner">${d.owner_name || '—'}</td>
-      <td class="td-value">${fmt(d.value)}</td>
+      <td class="td-value">${fmtDeal(d.rawValue, d.currency)}</td>
     </tr>`).join('');
 
   document.getElementById('table-perd').innerHTML = sortedPerd.map(d =>
     `<tr>
       <td class="td-title">${cleanTitle(d.title)}</td>
       <td class="td-owner">${d.owner_name || '—'}</td>
-      <td class="td-value">${fmt(d.value)}</td>
+      <td class="td-value">${fmtDeal(d.rawValue, d.currency)}</td>
     </tr>`).join('');
 
   // Donut
@@ -468,7 +501,7 @@ function renderDashboard(rows) {
     `<div class="prog-row">
       <div class="prog-label">
         <span class="prog-name">${cleanTitle(d.title)}</span>
-        <span class="prog-val">${fmt(d.value)}</span>
+        <span class="prog-val">${fmtDeal(d.rawValue, d.currency)}</span>
       </div>
       <div class="prog-track"><div class="prog-fill" style="width:${Math.round(d.value/maxVal*100)}%; background:var(--blue)"></div></div>
     </div>`).join('');
@@ -551,9 +584,80 @@ function renderDashboard(rows) {
     }
   });
 
+  // Timeline
+  renderTimeline(allPipelineDeals);
+
   // Show dashboard
   document.getElementById('loading').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
+}
+
+function renderTimeline(allDeals) {
+  function groupByMonth(arr) {
+    const m = {};
+    arr.forEach(d => {
+      const t = d.stage_change_time;
+      if (!t) return;
+      const date = new Date(t);
+      if (isNaN(date)) return;
+      const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+      m[key] = (m[key] || 0) + d.value;
+    });
+    return m;
+  }
+
+  const adjByMonth  = groupByMonth(allDeals.filter(d => d.stage_id === STAGE_ADJ));
+  const perdByMonth = groupByMonth(allDeals.filter(d => d.stage_id === STAGE_PERD));
+  const envByMonth  = groupByMonth(allDeals.filter(d => d.stage_id === STAGE_ENV));
+
+  const allMonths = [...new Set([
+    ...Object.keys(adjByMonth),
+    ...Object.keys(perdByMonth),
+    ...Object.keys(envByMonth)
+  ])].sort();
+
+  let adjCum = 0, perdCum = 0, envCum = 0;
+  const adjData = [], perdData = [], envData = [];
+
+  allMonths.forEach(mo => {
+    adjCum  += adjByMonth[mo]  || 0;
+    perdCum += perdByMonth[mo] || 0;
+    envCum  += envByMonth[mo]  || 0;
+    adjData.push(Math.round(adjCum  / 1e6));
+    perdData.push(Math.round(perdCum / 1e6));
+    envData.push(Math.round(envCum  / 1e6));
+  });
+
+  const labels = allMonths.map(mo => {
+    const [y, m] = mo.split('-');
+    return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('es-CL', { month: 'short', year: '2-digit' });
+  });
+
+  const tickCfg = { color: '#6B7280', font: { size: 10, family: "'DM Mono', monospace" } };
+  if (timelineChart) timelineChart.destroy();
+  timelineChart = new Chart(document.getElementById('timeline'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Adjudicados', data: adjData,  borderColor: '#22C55E', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 },
+        { label: 'Enviados',    data: envData,  borderColor: '#60A5FA', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 },
+        { label: 'Perdidos',    data: perdData, borderColor: '#EF4444', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#6B7280', font: { family: "'DM Mono', monospace", size: 11 }, boxWidth: 12, padding: 16 } },
+        tooltip: { callbacks: { label: ctx => ' $' + ctx.raw + 'M CLP (acum.)' } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { ...tickCfg, maxRotation: 45 }, border: { display: false } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { ...tickCfg, callback: v => '$' + v + 'M' }, border: { display: false } }
+      }
+    }
+  });
 }
 
 // Boot
