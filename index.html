@@ -380,6 +380,10 @@ function showError() {
 }
 
 function renderDashboard(rows) {
+  const envRaw = rows.filter(r => parseInt(r.pipeline_id) === PIPELINE_ID && parseInt(r.stage_id) === STAGE_ENV);
+  console.log('[DEBUG] Enviados en CSV (pipeline 3, stage 14):', envRaw.length);
+  console.log('[DEBUG] Títulos:', envRaw.map(r => r.title + ' | add_time:' + r.add_time));
+
   // Filter to target stages
   const deals = rows.filter(r => {
     const sid = parseInt(r.stage_id);
