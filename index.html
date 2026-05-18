@@ -326,6 +326,7 @@
 <script>
 const CSV_URL = '/api/csv';
 
+const PIPELINE_ID = 3;
 const STAGE_ADJ  = 84;
 const STAGE_PERD = 85;
 const STAGE_ENV  = 14;
@@ -382,7 +383,8 @@ function renderDashboard(rows) {
   // Filter to target stages
   const deals = rows.filter(r => {
     const sid = parseInt(r.stage_id);
-    return sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV;
+    const pid = parseInt(r.pipeline_id);
+    return pid === PIPELINE_ID && (sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV);
   }).map(r => ({
     ...r,
     stage_id: parseInt(r.stage_id),
