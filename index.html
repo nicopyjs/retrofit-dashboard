@@ -388,7 +388,7 @@ function renderDashboard(rows) {
   const deals = rows.filter(r => {
     const sid = parseInt(r.stage_id);
     const pid = parseInt(r.pipeline_id);
-    return pid === PIPELINE_ID && (sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV);
+    return pid === PIPELINE_ID && r.status === 'open' && (sid === STAGE_ADJ || sid === STAGE_PERD || sid === STAGE_ENV);
   }).map(r => ({
     ...r,
     stage_id: parseInt(r.stage_id),
