@@ -12,13 +12,13 @@ const chartConfig: ChartConfig = {
   perd: { label: "Perdidos", color: "var(--chart-3)" },
 };
 
-export function TimelineChart({ data }: { data: MonthlyPoint[] }) {
+export function TimelineChart({ data, scopeLabel }: { data: MonthlyPoint[]; scopeLabel: string }) {
   return (
     <Card className="mb-4 rounded-xl border-0 p-5.5 ring-1 ring-border">
       <div className="mb-4.5 flex items-baseline gap-2 font-display text-[13px] font-semibold tracking-wider text-muted-foreground uppercase">
         Evolución acumulada · CLP
         <span className="font-mono text-[10px] font-normal tracking-normal text-muted-foreground normal-case">
-          histórico completo · UF convertida a ${UF_RATE.toLocaleString("es-CL")}
+          {scopeLabel} · UF convertida a ${UF_RATE.toLocaleString("es-CL")}
         </span>
       </div>
       <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">

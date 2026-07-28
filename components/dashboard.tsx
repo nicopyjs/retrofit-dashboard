@@ -10,6 +10,7 @@ import { TopPipelineBars } from "@/components/top-pipeline-bars";
 import { OwnerCards } from "@/components/owner-cards";
 import { LossAnalysis } from "@/components/loss-analysis";
 import { PeriodFilter } from "@/components/period-filter";
+import { WinRateChart } from "@/components/win-rate-chart";
 import {
   computeKpis,
   computeLossReasons,
@@ -17,6 +18,7 @@ import {
   computeTimeline,
   filterAllPipelineDeals,
   filterOpenPipelineDeals,
+  type TimelineGranularity,
 } from "@/lib/deals";
 import { computePeriodRange, filterByDateRange, type PeriodType } from "@/lib/period";
 import { STAGE_ADJ_IDS, STAGE_ENV, STAGE_PERD_IDS, UF_RATE } from "@/lib/constants";
@@ -81,7 +83,25 @@ export function Dashboard() {
   const kpis = computeKpis(adj, perd, env);
   const ownerStats = computeOwnerStats(openDeals, adj, env, perd);
   const lossReasons = computeLossReasons(perd);
-  const timeline = computeTimeline(allPipelineDeals);
+
+  // El gráfico de evolución respeta el período seleccionado: granularidad más fina
+  // para ventanas cortas, y acumula desde el inicio del período filtrado (no desde
+  // el histórico completo) salvo en "Todo", donde muestra la tendencia completa.
+  const timelineGranularity: TimelineGranularity =
+    periodType === "month" ? "day" : periodType === "quarter" ? "week" : "month";
+  const timelineSource = periodType === "all" ? allPipelineDeals : filterByDateRange(allPipelineDeals, dateRange);
+  const timeline = computeTimeline(timelineSource, timelineGranularity);
+
+  // Comparación contra el período anterior equivalente (mismo tipo, un offset atrás).
+  const prevRange = periodType !== "all" ? computePeriodRange(periodType, periodOffset - 1) : null;
+  const prevOpenDeals = prevRange ? filterByDateRange(filterOpenPipelineDeals(rows), prevRange) : null;
+  const prevKpis = prevOpenDeals
+    ? computeKpis(
+        prevOpenDeals.filter((d) => STAGE_ADJ_IDS.includes(d.stage_id)),
+        prevOpenDeals.filter((d) => STAGE_PERD_IDS.includes(d.stage_id)),
+        prevOpenDeals.filter((d) => d.stage_id === STAGE_ENV)
+      )
+    : null;
 
   return (
     <div>
@@ -128,7 +148,7 @@ export function Dashboard() {
         onOffsetChange={setPeriodOffset}
       />
 
-      <KpiGrid kpis={kpis} />
+      <KpiGrid kpis={kpis} prevKpis={prevKpis} />
 
       <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         <DealsTable adj={adj} perd={perd} />
@@ -142,7 +162,9 @@ export function Dashboard() {
         />
       </div>
 
-      <TimelineChart data={timeline} />
+      <TimelineChart data={timeline} scopeLabel={periodType === "all" ? "histórico completo" : dateRange!.label} />
+
+      <WinRateChart data={timeline} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TopPipelineBars env={env} />

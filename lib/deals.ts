@@ -59,6 +59,12 @@ export function cleanTitle(title: string): string {
   return title.replace(/^(PSC|PCS)-\d+-\d+\s*-\s*(METROGAS\s*-\s*)?/i, "").trim() || title;
 }
 
+export function fmtDate(value: string | null | undefined): string {
+  const date = parseDealDate(value);
+  if (!date) return "—";
+  return date.toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" });
+}
+
 export function fmt(val: number): string {
   if (val >= 1e9) return "$" + (val / 1e9).toFixed(1) + "B";
   if (val >= 1e6) return "$" + Math.round(val / 1e6) + "M";
@@ -168,53 +174,87 @@ export function computeLossReasons(perd: NormalizedDeal[]): LossReason[] {
     .map(([label, count]) => ({ label, count, pct: total ? Math.round((count / total) * 100) : 0 }));
 }
 
+export type TimelineGranularity = "day" | "week" | "month";
+
 export interface MonthlyPoint {
-  month: string;
+  bucket: string;
   label: string;
   adj: number;
   env: number;
   perd: number;
+  /** Tasa de adjudicación (%) dentro de este bucket puntual (no acumulada). */
+  winRate: number | null;
 }
 
-export function computeTimeline(allDeals: NormalizedDeal[]): MonthlyPoint[] {
-  function groupByMonth(arr: NormalizedDeal[]) {
-    const m: Record<string, number> = {};
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function mondayOf(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const isoDay = (d.getDay() + 6) % 7; // 0 = lunes
+  d.setDate(d.getDate() - isoDay);
+  return d;
+}
+
+function bucketKey(date: Date, granularity: TimelineGranularity): string {
+  if (granularity === "day") return localDateKey(date);
+  if (granularity === "week") return localDateKey(mondayOf(date));
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-01`;
+}
+
+function bucketLabel(key: string, granularity: TimelineGranularity): string {
+  const date = new Date(`${key}T00:00:00`);
+  if (granularity === "month") {
+    return date.toLocaleDateString("es-CL", { month: "short", year: "2-digit" });
+  }
+  return date.toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
+}
+
+export function computeTimeline(allDeals: NormalizedDeal[], granularity: TimelineGranularity = "month"): MonthlyPoint[] {
+  function groupBy(arr: NormalizedDeal[]) {
+    const value: Record<string, number> = {};
+    const count: Record<string, number> = {};
     arr.forEach((d) => {
       const date = parseDealDate(d.periodDate);
       if (!date) return;
-      const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
-      m[key] = (m[key] || 0) + d.value;
+      const key = bucketKey(date, granularity);
+      value[key] = (value[key] || 0) + d.value;
+      count[key] = (count[key] || 0) + 1;
     });
-    return m;
+    return { value, count };
   }
 
-  const adjByMonth = groupByMonth(allDeals.filter((d) => STAGE_ADJ_IDS.includes(d.stage_id)));
-  const perdByMonth = groupByMonth(allDeals.filter((d) => STAGE_PERD_IDS.includes(d.stage_id)));
-  const envByMonth = groupByMonth(allDeals.filter((d) => d.stage_id === STAGE_ENV));
+  const adjBy = groupBy(allDeals.filter((d) => STAGE_ADJ_IDS.includes(d.stage_id)));
+  const perdBy = groupBy(allDeals.filter((d) => STAGE_PERD_IDS.includes(d.stage_id)));
+  const envBy = groupBy(allDeals.filter((d) => d.stage_id === STAGE_ENV));
 
-  const allMonths = [
-    ...new Set([...Object.keys(adjByMonth), ...Object.keys(perdByMonth), ...Object.keys(envByMonth)]),
+  const allKeys = [
+    ...new Set([...Object.keys(adjBy.value), ...Object.keys(perdBy.value), ...Object.keys(envBy.value)]),
   ].sort();
 
   let adjCum = 0;
   let perdCum = 0;
   let envCum = 0;
 
-  return allMonths.map((mo) => {
-    adjCum += adjByMonth[mo] || 0;
-    perdCum += perdByMonth[mo] || 0;
-    envCum += envByMonth[mo] || 0;
-    const [y, m] = mo.split("-");
-    const label = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString("es-CL", {
-      month: "short",
-      year: "2-digit",
-    });
+  return allKeys.map((key) => {
+    adjCum += adjBy.value[key] || 0;
+    perdCum += perdBy.value[key] || 0;
+    envCum += envBy.value[key] || 0;
+    const adjCount = adjBy.count[key] || 0;
+    const perdCount = perdBy.count[key] || 0;
+    const denom = adjCount + perdCount;
     return {
-      month: mo,
-      label,
+      bucket: key,
+      label: bucketLabel(key, granularity),
       adj: Math.round(adjCum / 1e6),
       env: Math.round(envCum / 1e6),
       perd: Math.round(perdCum / 1e6),
+      winRate: denom > 0 ? Math.round((adjCount / denom) * 100) : null,
     };
   });
 }
