@@ -1,69 +1,63 @@
 # Retrofit Deals Dashboard — NEB Chile
 
-Dashboard estático que consume datos en tiempo real desde Google Sheets.
+Dashboard de pipeline de ventas, Next.js (App Router) con datos en vivo desde la API de Pipedrive y gráficos con [shadcn/ui charts](https://ui.shadcn.com/docs/components/chart) (Recharts).
 
 ## Estructura del proyecto
 
 ```
 retrofit-dashboard/
-├── index.html     ← toda la app (HTML + CSS + JS)
-├── vercel.json    ← configuración de Vercel
+├── app/
+│   ├── layout.tsx            ← fonts, metadata, Vercel Analytics
+│   ├── page.tsx               ← renderiza <Dashboard/>
+│   ├── globals.css            ← tema (colores, tipografías)
+│   └── api/deals/route.ts     ← fetch paginado a Pipedrive v1, devuelve JSON
+├── components/                ← Dashboard, KPIs, tabla de deals, charts, etc.
+│   └── ui/                    ← primitives de shadcn/ui
+├── lib/
+│   ├── pipedrive.ts           ← fetchAllDeals() + tipos
+│   ├── deals.ts                ← agregaciones (KPIs, timeline, por ejecutivo, razones de pérdida)
+│   └── constants.ts            ← pipeline/stage IDs, tasa UF
 └── README.md
 ```
 
-## Cómo publicar en Vercel
-
-### Opción A — Desde GitHub (recomendado, con deploy automático)
-
-1. Crea un repositorio en GitHub y sube esta carpeta
-2. Ve a https://vercel.com → "Add New Project"
-3. Conecta tu repositorio de GitHub
-4. Vercel detecta automáticamente que es un sitio estático
-5. Click en **Deploy**
-6. Tu dashboard queda en `https://tu-proyecto.vercel.app`
-
-Cada vez que hagas push al repo, Vercel redeploya automáticamente.
-
-### Opción B — Desde CLI (más rápido)
+## Desarrollo local
 
 ```bash
-npm install -g vercel
-cd retrofit-dashboard
-vercel
+npm install
+npm run dev
 ```
 
-Sigue las instrucciones en terminal. En ~30 segundos tienes la URL.
+Abre [http://localhost:3000](http://localhost:3000).
+
+## Variables de entorno
+
+`app/api/deals/route.ts` necesita estas variables (Vercel → Project Settings → Environment Variables, o `.env.local` en desarrollo):
+
+| Variable              | Descripción                                   |
+|------------------------|-----------------------------------------------|
+| `PIPEDRIVE_API_TOKEN`  | Token personal de Pipedrive (Settings → Personal Preferences → API) |
+| `PIPEDRIVE_DOMAIN`     | Subdominio de la empresa (opcional, default `nebchile`) |
+
+Para desarrollo local con las variables ya configuradas en Vercel, corre `vercel env pull .env.local`.
 
 ## Actualizar los datos
 
-Los datos se leen **cada vez que alguien abre el dashboard** desde Google Sheets.
-No necesitas redeployar nada — solo actualiza el Google Sheet y los cambios
-aparecen automáticamente al recargar la página.
-
-También hay un botón **Actualizar** en el dashboard para refrescar sin cerrar la pestaña.
-
-## Cambiar la fuente de datos
-
-En `index.html`, línea ~140:
-
-```js
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/...';
-```
-
-Reemplaza con la URL de tu Sheet publicado como CSV.
+`app/api/deals/route.ts` consulta la API de Pipedrive directamente y la respuesta se cachea 5 minutos en el edge de Vercel (`stale-while-revalidate`). El dashboard hace fetch al montar y con el botón **Actualizar**.
 
 ## Stages configurados
 
-| Stage ID | Etapa          |
-|----------|----------------|
-| 14       | Enviado        |
-| 84       | Adjudicado 2026|
-| 85       | Perdido 2026   |
+| Stage ID | Etapa           |
+|----------|-----------------|
+| 14       | Enviada         |
+| 84       | Adjudicada 2026 |
+| 85       | Perdido 2026    |
 
-Para cambiar, edita las constantes en `index.html`:
+Para cambiar, edita `lib/constants.ts`.
 
-```js
-const STAGE_ADJ  = 84;
-const STAGE_PERD = 85;
-const STAGE_ENV  = 14;
+## Deploy en Vercel
+
+```bash
+vercel
 ```
+
+Framework Next.js es zero-config en Vercel — no hace falta `vercel.json`. Asegúrate de configurar las variables de entorno antes del primer deploy.
