@@ -19,7 +19,7 @@ import {
   filterOpenPipelineDeals,
 } from "@/lib/deals";
 import { computePeriodRange, filterByDateRange, type PeriodType } from "@/lib/period";
-import { STAGE_ADJ, STAGE_ENV, STAGE_PERD, UF_RATE } from "@/lib/constants";
+import { STAGE_ADJ_IDS, STAGE_ENV, STAGE_PERD_IDS, UF_RATE } from "@/lib/constants";
 import type { PipedriveDeal } from "@/lib/pipedrive";
 
 export function Dashboard() {
@@ -74,8 +74,8 @@ export function Dashboard() {
   const dateRange = computePeriodRange(periodType, periodOffset);
   const openDeals = filterByDateRange(filterOpenPipelineDeals(rows), dateRange);
 
-  const adj = openDeals.filter((d) => d.stage_id === STAGE_ADJ);
-  const perd = openDeals.filter((d) => d.stage_id === STAGE_PERD);
+  const adj = openDeals.filter((d) => STAGE_ADJ_IDS.includes(d.stage_id));
+  const perd = openDeals.filter((d) => STAGE_PERD_IDS.includes(d.stage_id));
   const env = openDeals.filter((d) => d.stage_id === STAGE_ENV);
 
   const kpis = computeKpis(adj, perd, env);

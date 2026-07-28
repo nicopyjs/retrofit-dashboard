@@ -1,21 +1,50 @@
 import type { PipedriveDeal } from "./pipedrive";
-import { PIPELINE_ID, STAGE_ADJ, STAGE_PERD, STAGE_ENV, UF_RATE } from "./constants";
+import {
+  PIPELINE_ID,
+  STAGE_ADJ_IDS,
+  STAGE_PERD_IDS,
+  STAGE_ENV,
+  CUSTOM_FIELD_FECHA_ADJUDICACION,
+  UF_RATE,
+} from "./constants";
 
 export interface NormalizedDeal extends PipedriveDeal {
   rawValue: number;
   value: number;
+  /** Fecha usada para ubicar el deal en un período (trimestre/mes). */
+  periodDate: string | null;
+}
+
+/**
+ * Pipedrive devuelve fechas en dos formatos: "YYYY-MM-DD" (campos personalizados,
+ * sin hora) y "YYYY-MM-DD HH:mm:ss" (campos del sistema). Ambos se normalizan a
+ * hora local antes de parsear — una fecha sin hora interpretada como UTC puede
+ * caer en el día anterior según la zona horaria del navegador.
+ */
+export function parseDealDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value.replace(" ", "T");
+  const date = new Date(iso);
+  return isNaN(date.getTime()) ? null : date;
 }
 
 export function normalizeDeal(r: PipedriveDeal): NormalizedDeal {
   const rawValue = Number(r.value) || 0;
   const currency = r.currency || "CLP";
+  const stageId = Number(r.stage_id);
+  const fechaAdjudicacion = r[CUSTOM_FIELD_FECHA_ADJUDICACION];
+  const periodDate = STAGE_ADJ_IDS.includes(stageId)
+    ? (typeof fechaAdjudicacion === "string" && fechaAdjudicacion ? fechaAdjudicacion : r.stage_change_time)
+    : r.stage_change_time;
+
   return {
     ...r,
-    stage_id: Number(r.stage_id),
+    stage_id: stageId,
     pipeline_id: Number(r.pipeline_id),
     rawValue,
     currency,
     value: currency === "CLF" ? rawValue * UF_RATE : rawValue,
+    periodDate,
   };
 }
 
@@ -38,7 +67,7 @@ export function fmtDeal(rawValue: number, currency: string): string {
 }
 
 function isTrackedStage(stageId: number): boolean {
-  return stageId === STAGE_ADJ || stageId === STAGE_PERD || stageId === STAGE_ENV;
+  return STAGE_ADJ_IDS.includes(stageId) || STAGE_PERD_IDS.includes(stageId) || stageId === STAGE_ENV;
 }
 
 export function filterOpenPipelineDeals(rows: PipedriveDeal[]): NormalizedDeal[] {
@@ -144,18 +173,16 @@ export function computeTimeline(allDeals: NormalizedDeal[]): MonthlyPoint[] {
   function groupByMonth(arr: NormalizedDeal[]) {
     const m: Record<string, number> = {};
     arr.forEach((d) => {
-      const t = d.stage_change_time;
-      if (!t) return;
-      const date = new Date(t);
-      if (isNaN(date.getTime())) return;
+      const date = parseDealDate(d.periodDate);
+      if (!date) return;
       const key = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
       m[key] = (m[key] || 0) + d.value;
     });
     return m;
   }
 
-  const adjByMonth = groupByMonth(allDeals.filter((d) => d.stage_id === STAGE_ADJ));
-  const perdByMonth = groupByMonth(allDeals.filter((d) => d.stage_id === STAGE_PERD));
+  const adjByMonth = groupByMonth(allDeals.filter((d) => STAGE_ADJ_IDS.includes(d.stage_id)));
+  const perdByMonth = groupByMonth(allDeals.filter((d) => STAGE_PERD_IDS.includes(d.stage_id)));
   const envByMonth = groupByMonth(allDeals.filter((d) => d.stage_id === STAGE_ENV));
 
   const allMonths = [

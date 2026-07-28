@@ -1,6 +1,6 @@
-import type { NormalizedDeal } from "./deals";
+import { parseDealDate, type NormalizedDeal } from "./deals";
 
-export type PeriodType = "month" | "quarter" | "all";
+export type PeriodType = "month" | "quarter" | "year" | "all";
 
 export interface DateRange {
   start: Date;
@@ -33,6 +33,13 @@ export function computePeriodRange(type: PeriodType, offset: number, now: Date =
     return { start, end, label: `${MONTH_LABELS[base.getMonth()]} ${base.getFullYear()}` };
   }
 
+  if (type === "year") {
+    const year = now.getFullYear() + offset;
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    return { start, end, label: `${year}` };
+  }
+
   const currentQuarterIndex = Math.floor(now.getMonth() / 3);
   const baseQuarterIndex = currentQuarterIndex + offset;
   const yearOffset = Math.floor(baseQuarterIndex / 4);
@@ -46,9 +53,8 @@ export function computePeriodRange(type: PeriodType, offset: number, now: Date =
 export function filterByDateRange(deals: NormalizedDeal[], range: DateRange | null): NormalizedDeal[] {
   if (!range) return deals;
   return deals.filter((d) => {
-    if (!d.stage_change_time) return false;
-    const t = new Date(d.stage_change_time);
-    if (isNaN(t.getTime())) return false;
+    const t = parseDealDate(d.periodDate);
+    if (!t) return false;
     return t >= range.start && t < range.end;
   });
 }

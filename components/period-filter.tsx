@@ -6,6 +6,7 @@ import type { PeriodType } from "@/lib/period";
 const GRANULARITIES: { value: PeriodType; label: string }[] = [
   { value: "month", label: "Mes" },
   { value: "quarter", label: "Trimestre" },
+  { value: "year", label: "Año" },
   { value: "all", label: "Todo" },
 ];
 
