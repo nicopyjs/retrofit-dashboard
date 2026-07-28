@@ -18,7 +18,7 @@ export function TimelineChart({ data }: { data: MonthlyPoint[] }) {
       <div className="mb-4.5 flex items-baseline gap-2 font-display text-[13px] font-semibold tracking-wider text-muted-foreground uppercase">
         Evolución acumulada · CLP
         <span className="font-mono text-[10px] font-normal tracking-normal text-muted-foreground normal-case">
-          por stage_change_time · UF convertida a ${UF_RATE.toLocaleString("es-CL")}
+          histórico completo · UF convertida a ${UF_RATE.toLocaleString("es-CL")}
         </span>
       </div>
       <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">

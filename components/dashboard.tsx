@@ -9,6 +9,7 @@ import { TimelineChart } from "@/components/timeline-chart";
 import { TopPipelineBars } from "@/components/top-pipeline-bars";
 import { OwnerCards } from "@/components/owner-cards";
 import { LossAnalysis } from "@/components/loss-analysis";
+import { PeriodFilter } from "@/components/period-filter";
 import {
   computeKpis,
   computeLossReasons,
@@ -17,6 +18,7 @@ import {
   filterAllPipelineDeals,
   filterOpenPipelineDeals,
 } from "@/lib/deals";
+import { computePeriodRange, filterByDateRange, type PeriodType } from "@/lib/period";
 import { STAGE_ADJ, STAGE_ENV, STAGE_PERD, UF_RATE } from "@/lib/constants";
 import type { PipedriveDeal } from "@/lib/pipedrive";
 
@@ -25,6 +27,8 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [periodType, setPeriodType] = useState<PeriodType>("all");
+  const [periodOffset, setPeriodOffset] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -66,8 +70,9 @@ export function Dashboard() {
     );
   }
 
-  const openDeals = filterOpenPipelineDeals(rows);
   const allPipelineDeals = filterAllPipelineDeals(rows);
+  const dateRange = computePeriodRange(periodType, periodOffset);
+  const openDeals = filterByDateRange(filterOpenPipelineDeals(rows), dateRange);
 
   const adj = openDeals.filter((d) => d.stage_id === STAGE_ADJ);
   const perd = openDeals.filter((d) => d.stage_id === STAGE_PERD);
@@ -114,6 +119,14 @@ export function Dashboard() {
           </button>
         </div>
       </div>
+
+      <PeriodFilter
+        type={periodType}
+        offset={periodOffset}
+        label={dateRange?.label ?? null}
+        onTypeChange={setPeriodType}
+        onOffsetChange={setPeriodOffset}
+      />
 
       <KpiGrid kpis={kpis} />
 
