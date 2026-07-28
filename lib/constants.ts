@@ -7,9 +7,10 @@ export const STAGE_ADJ_IDS = [18, 29, 78, 84]; // Adjudicada 2023 / 2024 / 2025 
 export const STAGE_PERD_IDS = [19, 37, 82, 85]; // PERDIDO / Perdidos 2024 / Perdido 2025 / Perdido 2026
 export const STAGE_ENV = 14; // Enviada (etapa única, no cambia por año)
 
-// Campo personalizado de Pipedrive con la fecha real de adjudicación (rellenada a mano).
-// Se usa para ubicar el deal en el trimestre/mes correcto; si no está rellena, se usa
-// stage_change_time como respaldo.
+// Campos personalizados de Pipedrive con la fecha real de adjudicación / envío
+// (rellenados a mano). Se usan para ubicar el deal en el trimestre/mes correcto;
+// si no están rellenos, se usa stage_change_time como respaldo.
 export const CUSTOM_FIELD_FECHA_ADJUDICACION = "f5bc19dd75450682394fb14761fefcbd82a0d2ce";
+export const CUSTOM_FIELD_FECHA_ENVIO = "7bd6a433ad5e8267a7fbdf84c8ddccdb56c8a98f";
 
 export const UF_RATE = 39000; // CLP por 1 UF — actualizar mensualmente

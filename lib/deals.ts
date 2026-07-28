@@ -5,6 +5,7 @@ import {
   STAGE_PERD_IDS,
   STAGE_ENV,
   CUSTOM_FIELD_FECHA_ADJUDICACION,
+  CUSTOM_FIELD_FECHA_ENVIO,
   UF_RATE,
 } from "./constants";
 
@@ -28,14 +29,20 @@ export function parseDealDate(value: string | null | undefined): Date | null {
   return isNaN(date.getTime()) ? null : date;
 }
 
+function customDateOrFallback(r: PipedriveDeal, fieldKey: string): string | null {
+  const value = r[fieldKey];
+  return typeof value === "string" && value ? value : r.stage_change_time;
+}
+
 export function normalizeDeal(r: PipedriveDeal): NormalizedDeal {
   const rawValue = Number(r.value) || 0;
   const currency = r.currency || "CLP";
   const stageId = Number(r.stage_id);
-  const fechaAdjudicacion = r[CUSTOM_FIELD_FECHA_ADJUDICACION];
   const periodDate = STAGE_ADJ_IDS.includes(stageId)
-    ? (typeof fechaAdjudicacion === "string" && fechaAdjudicacion ? fechaAdjudicacion : r.stage_change_time)
-    : r.stage_change_time;
+    ? customDateOrFallback(r, CUSTOM_FIELD_FECHA_ADJUDICACION)
+    : stageId === STAGE_ENV
+      ? customDateOrFallback(r, CUSTOM_FIELD_FECHA_ENVIO)
+      : r.stage_change_time;
 
   return {
     ...r,
