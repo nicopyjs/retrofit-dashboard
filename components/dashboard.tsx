@@ -132,10 +132,10 @@ export function Dashboard() {
           <Image src="/neb-mark.png" alt="" width={44} height={44} className="shrink-0" priority />
           <div>
             <h1 className="font-display text-[32px] font-extrabold tracking-tight text-white">
-              Retrofit <span className="text-brand-gold">Deals</span>
+              NEB Chile · Retrofit <span className="text-brand-gold">Deals</span>
             </h1>
             <p className="mt-1.5 font-mono text-[13px] text-muted-foreground">
-              NEB Chile · Pipeline 2026 — stages enviado / adjudicado / perdido
+              Pipeline 2026 — stages enviado / adjudicado / perdido
             </p>
           </div>
         </div>

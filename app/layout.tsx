@@ -1,18 +1,12 @@
 import type { Metadata } from "next";
-import { Syne, DM_Sans, DM_Mono } from "next/font/google";
+import { Inter, DM_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const syne = Syne({
-  variable: "--font-syne",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const dmMono = DM_Mono({
@@ -22,7 +16,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Retrofit Deals — NEB Chile",
+  title: "NEB Chile · Retrofit Deals",
   description: "Dashboard de pipeline de ventas NEB Chile, en vivo desde Pipedrive.",
 };
 
@@ -32,10 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="es"
-      className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}
-    >
+    <html lang="es" className={`${inter.variable} ${dmMono.variable}`}>
       <body className="antialiased">
         {children}
         <Analytics />

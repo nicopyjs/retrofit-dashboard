@@ -60,17 +60,14 @@ como utilidades de Tailwind v4 (`bg-brand-gold`, `text-chart-1`,
 
 | Fuente | Uso | Por qué |
 |---|---|---|
-| **Syne** (`font-display`) | Títulos grandes, valores de KPI | Da personalidad propia al dashboard — más distintivo que Inter para números grandes |
-| **DM Sans** (`font-sans`) | Texto de cuerpo | Legible, neutro |
-| **DM Mono** (`font-mono`) | Labels en mayúscula, timestamps, cifras técnicas | Da la sensación de "panel de datos" |
+| **Inter** (`font-display` / `font-sans`) | Títulos, valores de KPI, texto de cuerpo | La misma fuente que usa nebchile-web — alineación 1:1 con el sitio real de la marca |
+| **DM Mono** (`font-mono`) | Labels en mayúscula, timestamps, cifras técnicas | Da la sensación de "panel de datos"; no compite con la identidad de marca porque solo se usa en detalles técnicos, no en texto de marca |
 
-nebchile-web usa **Inter** en todo su sitio. Se decidió *no* migrar el
-dashboard a Inter — Syne le da una identidad visual más marcada que sería una
-pérdida cambiar solo por consistencia literal de fuente. El dorado + el logo
-ya anclan la marca sin necesidad de igualar la tipografía. Si en algún
-momento se prefiere alineación 1:1 con el sitio, el cambio es acotado:
-reemplazar `Syne`/`DM_Sans` por `Inter` en `app/layout.tsx` y los tokens
-`--font-display`/`--font-sans` en `globals.css`.
+Versión anterior usaba Syne (display) + DM Sans (body) — una combinación más
+"de portafolio/SaaS genérico" que no correspondía a la marca real de NEB. Se
+migró a Inter completo (`app/layout.tsx`, tokens `--font-display`/`--font-sans`
+en `globals.css`) para que el dashboard se lea como un producto de NEB, no
+como una plantilla.
 
 ## Logo
 
