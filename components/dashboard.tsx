@@ -13,6 +13,7 @@ import { LossAnalysis } from "@/components/loss-analysis";
 import { PeriodFilter } from "@/components/period-filter";
 import { WinRateChart } from "@/components/win-rate-chart";
 import { FunnelConversionChart } from "@/components/funnel-conversion-chart";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { FunnelStages } from "@/components/funnel-stages";
 import {
   computeFunnelConversion,
@@ -131,7 +132,7 @@ export function Dashboard() {
         <div className="flex items-center gap-3.5">
           <Image src="/neb-mark.png" alt="" width={44} height={44} className="shrink-0" priority />
           <div>
-            <h1 className="font-display text-[32px] font-extrabold tracking-tight text-white">
+            <h1 className="font-display text-[32px] font-extrabold tracking-tight text-foreground">
               NEB Chile · Retrofit <span className="text-brand-gold">Deals</span>
             </h1>
             <p className="mt-1.5 font-mono text-[13px] text-muted-foreground">
@@ -154,14 +155,17 @@ export function Dashboard() {
           <br />
           Moneda: CLP · UF @ ${UF_RATE.toLocaleString("es-CL")}
           <br />
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border-strong bg-secondary px-3 py-1.5 font-mono text-[10px] tracking-wider text-muted-foreground uppercase transition-colors hover:border-brand-gold hover:text-brand-gold disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
-          </button>
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <ThemeToggle />
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border-strong bg-secondary px-3 py-1.5 font-mono text-[10px] tracking-wider text-muted-foreground uppercase transition-colors hover:border-brand-gold hover:text-brand-gold disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </button>
+          </div>
         </div>
       </div>
 
