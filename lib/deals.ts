@@ -6,6 +6,8 @@ import {
   STAGE_ENV,
   CUSTOM_FIELD_FECHA_ADJUDICACION,
   CUSTOM_FIELD_FECHA_ENVIO,
+  CUSTOM_FIELD_FECHA_CARTA_OFERTA,
+  CUSTOM_FIELD_CAUSA_RECHAZO,
   UF_RATE,
 } from "./constants";
 
@@ -164,7 +166,8 @@ export interface LossReason {
 export function computeLossReasons(perd: NormalizedDeal[]): LossReason[] {
   const razones: Record<string, number> = {};
   perd.forEach((d) => {
-    const r = (d.lost_reason || "").trim();
+    const raw = d[CUSTOM_FIELD_CAUSA_RECHAZO];
+    const r = typeof raw === "string" ? raw.trim() : "";
     const key = r ? r.charAt(0).toUpperCase() + r.slice(1).toLowerCase() : "Sin razón registrada";
     razones[key] = (razones[key] || 0) + 1;
   });
@@ -172,6 +175,26 @@ export function computeLossReasons(perd: NormalizedDeal[]): LossReason[] {
   return Object.entries(razones)
     .sort((a, b) => b[1] - a[1])
     .map(([label, count]) => ({ label, count, pct: total ? Math.round((count / total) * 100) : 0 }));
+}
+
+export interface OfferLetterStats {
+  cartaOfertaCount: number;
+  adjCount: number;
+  perdCount: number;
+  adjPct: number | null;
+  perdPct: number | null;
+}
+
+export function computeOfferLetterStats(adj: NormalizedDeal[], perd: NormalizedDeal[]): OfferLetterStats {
+  const closed = [...adj, ...perd];
+  const cartaOfertaCount = closed.filter((d) => Boolean(d[CUSTOM_FIELD_FECHA_CARTA_OFERTA])).length;
+  return {
+    cartaOfertaCount,
+    adjCount: adj.length,
+    perdCount: perd.length,
+    adjPct: cartaOfertaCount > 0 ? Math.round((adj.length / cartaOfertaCount) * 100) : null,
+    perdPct: cartaOfertaCount > 0 ? Math.round((perd.length / cartaOfertaCount) * 100) : null,
+  };
 }
 
 export type TimelineGranularity = "day" | "week" | "month";

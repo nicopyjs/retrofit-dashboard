@@ -11,9 +11,11 @@ import { OwnerCards } from "@/components/owner-cards";
 import { LossAnalysis } from "@/components/loss-analysis";
 import { PeriodFilter } from "@/components/period-filter";
 import { WinRateChart } from "@/components/win-rate-chart";
+import { OfferLetterChart } from "@/components/offer-letter-chart";
 import {
   computeKpis,
   computeLossReasons,
+  computeOfferLetterStats,
   computeOwnerStats,
   computeTimeline,
   filterAllPipelineDeals,
@@ -83,6 +85,7 @@ export function Dashboard() {
   const kpis = computeKpis(adj, perd, env);
   const ownerStats = computeOwnerStats(openDeals, adj, env, perd);
   const lossReasons = computeLossReasons(perd);
+  const offerLetterStats = computeOfferLetterStats(adj, perd);
 
   // El gráfico de evolución respeta el período seleccionado: granularidad más fina
   // para ventanas cortas, y acumula desde el inicio del período filtrado (no desde
@@ -165,6 +168,8 @@ export function Dashboard() {
       <TimelineChart data={timeline} scopeLabel={periodType === "all" ? "histórico completo" : dateRange!.label} />
 
       <WinRateChart data={timeline} />
+
+      <OfferLetterChart stats={offerLetterStats} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TopPipelineBars env={env} />
