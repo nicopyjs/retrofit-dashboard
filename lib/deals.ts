@@ -4,9 +4,13 @@ import {
   STAGE_ADJ_IDS,
   STAGE_PERD_IDS,
   STAGE_ENV,
+  STAGE_PROSPECCION,
+  STAGE_VISITAR,
+  STAGE_NEGOCIACION,
   CUSTOM_FIELD_FECHA_ADJUDICACION,
   CUSTOM_FIELD_FECHA_ENVIO,
   CUSTOM_FIELD_FECHA_CARTA_OFERTA,
+  CUSTOM_FIELD_FECHA_REUNION_CLIENTE,
   CUSTOM_FIELD_CAUSA_RECHAZO,
   UF_RATE,
 } from "./constants";
@@ -97,6 +101,18 @@ export function filterAllPipelineDeals(rows: PipedriveDeal[]): NormalizedDeal[] 
     .map(normalizeDeal);
 }
 
+const EARLY_FUNNEL_STAGES = [STAGE_PROSPECCION, STAGE_VISITAR, STAGE_NEGOCIACION];
+
+/** Deals abiertos en etapas previas a "Enviada" (Prospección, Visitar, Negociación). */
+export function filterEarlyFunnelDeals(rows: PipedriveDeal[]): NormalizedDeal[] {
+  return rows
+    .filter(
+      (r) =>
+        Number(r.pipeline_id) === PIPELINE_ID && r.status === "open" && EARLY_FUNNEL_STAGES.includes(Number(r.stage_id))
+    )
+    .map(normalizeDeal);
+}
+
 export interface Kpis {
   sumAdj: number;
   sumPerd: number;
@@ -177,23 +193,31 @@ export function computeLossReasons(perd: NormalizedDeal[]): LossReason[] {
     .map(([label, count]) => ({ label, count, pct: total ? Math.round((count / total) * 100) : 0 }));
 }
 
-export interface OfferLetterStats {
+export interface FunnelConversionStats {
   cartaOfertaCount: number;
+  acercamientoCount: number;
   adjCount: number;
   perdCount: number;
-  adjPct: number | null;
-  perdPct: number | null;
+  adjVsPerdPct: number | null;
+  adjVsCartaPct: number | null;
+  adjVsAcercamientoPct: number | null;
+  acercamientoVsCartaPct: number | null;
 }
 
-export function computeOfferLetterStats(adj: NormalizedDeal[], perd: NormalizedDeal[]): OfferLetterStats {
+export function computeFunnelConversion(adj: NormalizedDeal[], perd: NormalizedDeal[]): FunnelConversionStats {
   const closed = [...adj, ...perd];
   const cartaOfertaCount = closed.filter((d) => Boolean(d[CUSTOM_FIELD_FECHA_CARTA_OFERTA])).length;
+  const acercamientoCount = closed.filter((d) => Boolean(d[CUSTOM_FIELD_FECHA_REUNION_CLIENTE])).length;
+  const denomAdjPerd = adj.length + perd.length;
   return {
     cartaOfertaCount,
+    acercamientoCount,
     adjCount: adj.length,
     perdCount: perd.length,
-    adjPct: cartaOfertaCount > 0 ? Math.round((adj.length / cartaOfertaCount) * 100) : null,
-    perdPct: cartaOfertaCount > 0 ? Math.round((perd.length / cartaOfertaCount) * 100) : null,
+    adjVsPerdPct: denomAdjPerd > 0 ? Math.round((adj.length / denomAdjPerd) * 100) : null,
+    adjVsCartaPct: cartaOfertaCount > 0 ? Math.round((adj.length / cartaOfertaCount) * 100) : null,
+    adjVsAcercamientoPct: acercamientoCount > 0 ? Math.round((adj.length / acercamientoCount) * 100) : null,
+    acercamientoVsCartaPct: cartaOfertaCount > 0 ? Math.round((acercamientoCount / cartaOfertaCount) * 100) : null,
   };
 }
 

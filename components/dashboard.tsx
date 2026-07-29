@@ -12,19 +12,29 @@ import { OwnerCards } from "@/components/owner-cards";
 import { LossAnalysis } from "@/components/loss-analysis";
 import { PeriodFilter } from "@/components/period-filter";
 import { WinRateChart } from "@/components/win-rate-chart";
-import { OfferLetterChart } from "@/components/offer-letter-chart";
+import { FunnelConversionChart } from "@/components/funnel-conversion-chart";
+import { FunnelStages } from "@/components/funnel-stages";
 import {
+  computeFunnelConversion,
   computeKpis,
   computeLossReasons,
-  computeOfferLetterStats,
   computeOwnerStats,
   computeTimeline,
   filterAllPipelineDeals,
+  filterEarlyFunnelDeals,
   filterOpenPipelineDeals,
   type TimelineGranularity,
 } from "@/lib/deals";
 import { computePeriodRange, filterByDateRange, type PeriodType } from "@/lib/period";
-import { STAGE_ADJ_IDS, STAGE_ENV, STAGE_PERD_IDS, UF_RATE } from "@/lib/constants";
+import {
+  STAGE_ADJ_IDS,
+  STAGE_ENV,
+  STAGE_NEGOCIACION,
+  STAGE_PERD_IDS,
+  STAGE_PROSPECCION,
+  STAGE_VISITAR,
+  UF_RATE,
+} from "@/lib/constants";
 import type { PipedriveDeal } from "@/lib/pipedrive";
 
 export function Dashboard() {
@@ -86,7 +96,15 @@ export function Dashboard() {
   const kpis = computeKpis(adj, perd, env);
   const ownerStats = computeOwnerStats(openDeals, adj, env, perd);
   const lossReasons = computeLossReasons(perd);
-  const offerLetterStats = computeOfferLetterStats(adj, perd);
+  const funnelConversion = computeFunnelConversion(adj, perd);
+
+  const earlyFunnelDeals = filterByDateRange(filterEarlyFunnelDeals(rows), dateRange);
+  const porVisitar = earlyFunnelDeals.filter((d) => d.stage_id === STAGE_VISITAR).length;
+  // "Por enviar" no tenía una medida DAX propia en el pbix de referencia — se mapeó a
+  // la etapa Prospección (antes de Visitar/Enviada) por ser la interpretación más
+  // directa del nombre. Ajustar si no calza con el proceso real del equipo.
+  const porEnviar = earlyFunnelDeals.filter((d) => d.stage_id === STAGE_PROSPECCION).length;
+  const negociacion = earlyFunnelDeals.filter((d) => d.stage_id === STAGE_NEGOCIACION).length;
 
   // El gráfico de evolución respeta el período seleccionado: granularidad más fina
   // para ventanas cortas, y acumula desde el inicio del período filtrado (no desde
@@ -155,6 +173,8 @@ export function Dashboard() {
         onOffsetChange={setPeriodOffset}
       />
 
+      <FunnelStages porVisitar={porVisitar} porEnviar={porEnviar} enEspera={env.length} negociacion={negociacion} />
+
       <KpiGrid kpis={kpis} prevKpis={prevKpis} />
 
       <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -173,7 +193,7 @@ export function Dashboard() {
 
       <WinRateChart data={timeline} />
 
-      <OfferLetterChart stats={offerLetterStats} />
+      <FunnelConversionChart stats={funnelConversion} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TopPipelineBars env={env} />
