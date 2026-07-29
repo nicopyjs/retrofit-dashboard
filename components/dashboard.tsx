@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { KpiGrid } from "@/components/kpi-grid";
@@ -59,7 +60,7 @@ export function Dashboard() {
   if (loading && !rows) {
     return (
       <div className="flex h-[80vh] flex-col items-center justify-center gap-4">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-chart-1" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-secondary border-t-brand-gold" />
         <p className="font-mono text-xs text-muted-foreground">Cargando datos desde Pipedrive...</p>
       </div>
     );
@@ -109,13 +110,16 @@ export function Dashboard() {
   return (
     <div>
       <div className="mb-10 flex items-end justify-between border-b border-border-strong pb-6">
-        <div>
-          <h1 className="font-display text-[32px] font-extrabold tracking-tight text-white">
-            Retrofit <span className="text-chart-1">Deals</span>
-          </h1>
-          <p className="mt-1.5 font-mono text-[13px] text-muted-foreground">
-            NEB Chile · Pipeline 2026 — stages enviado / adjudicado / perdido
-          </p>
+        <div className="flex items-center gap-3.5">
+          <Image src="/neb-mark.png" alt="" width={44} height={44} className="shrink-0" priority />
+          <div>
+            <h1 className="font-display text-[32px] font-extrabold tracking-tight text-white">
+              Retrofit <span className="text-brand-gold">Deals</span>
+            </h1>
+            <p className="mt-1.5 font-mono text-[13px] text-muted-foreground">
+              NEB Chile · Pipeline 2026 — stages enviado / adjudicado / perdido
+            </p>
+          </div>
         </div>
         <div className="text-right font-mono text-[11px] leading-[1.8] text-muted-foreground">
           <span>
@@ -135,7 +139,7 @@ export function Dashboard() {
           <button
             onClick={loadData}
             disabled={loading}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border-strong bg-secondary px-3 py-1.5 font-mono text-[10px] tracking-wider text-muted-foreground uppercase transition-colors hover:border-chart-1 hover:text-foreground disabled:opacity-50"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border-strong bg-secondary px-3 py-1.5 font-mono text-[10px] tracking-wider text-muted-foreground uppercase transition-colors hover:border-brand-gold hover:text-brand-gold disabled:opacity-50"
           >
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
             Actualizar

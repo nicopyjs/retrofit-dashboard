@@ -28,6 +28,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-dark: var(--brand-gold-dark);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -69,6 +71,9 @@
   --destructive: #ef4444;
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.12);
+  /* Marca NEB — tomado de nebchile-web (globals.css: --neb-gold / --neb-gold-dark) */
+  --brand-gold: #d4a800;
+  --brand-gold-dark: #a88500;
   --input: rgba(255, 255, 255, 0.12);
   --ring: #22c55e;
   --chart-1: #22c55e;

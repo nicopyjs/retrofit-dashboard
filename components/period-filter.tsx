@@ -35,7 +35,7 @@ export function PeriodFilter({
             }}
             className={`rounded-md px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase transition-colors ${
               type === g.value
-                ? "bg-background text-foreground"
+                ? "bg-background text-brand-gold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
